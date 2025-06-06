@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Markdown/LaTeX a PDF Profesional</title>
+    <link rel="icon" type="image/png" href="public/images/papiwebMarkDown.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/stex/stex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #ed64a6, #f093fb);
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #48bb78, #38b2ac);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #e53e3e, #fc8181);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        .editor-panel, .preview-panel, .pdf-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .preview-content {
+            padding: 20px;
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+            color: #2d3748;
+        }
+
+        .preview-content h1, .preview-content h2, .preview-content h3 {
+            color: #4a5568;
+            margin: 20px 0 10px;
+        }
+
+        .preview-content h1 {
+            font-size: 2rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .preview-content h2 {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .preview-content pre {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .preview-content code {
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .preview-content blockquote {
+            border-left: 4px solid #ed64a6;
+            margin: 15px 0;
+            padding: 10px 20px;
+            background: rgba(237, 100, 166, 0.1);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .format-selector {
+            margin: 0 10px;
+        }
+
+        .format-selector select {
+            padding: 8px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .format-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .pdf-tools {
+            display: none;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        .pdf-tools.active {
+            display: flex;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #4a5568;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .editor-panel, .preview-panel, .pdf-panel {
+                min-height: 300px;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+        }
+
+        .footer .coffee-icon {
+            font-size: 1.5em;
+            animation: steam 2s infinite;
+        }
+
+        @keyframes steam {
+            0% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-alt"></i> Editor Markdown/LaTeX a PDF Profesional</h1>
+            <div class="toolbar">
+                <div class="format-selector">
+                    <select id="formatSelect">
+                        <option value="markdown">Markdown</option>
+                        <option value="latex">LaTeX</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="insertTemplate()">
+                    <i class="fas fa-file-plus"></i> Plantilla
+                </button>
+                <button class="btn secondary" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button class="btn success" onclick="showAddTextModal()">
+                    <i class="fas fa-plus"></i> Agregar Texto
+                </button>
+                <button class="btn" onclick="addImage()">
+                    <i class="fas fa-image"></i> Imagen
+                </button>
+                <button class="btn danger" onclick="clearEditor()">
+                    <i class="fas fa-trash"></i> Limpiar
+                </button>
+                <button class="btn" onclick="saveDocument()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <button class="btn" onclick="loadDocument()">
+                    <i class="fas fa-folder-open"></i> Cargar
+                </button>
+            </div>
+            <div class="pdf-tools" id="pdfTools">
+                <button class="btn" onclick="addWatermark()">
+                    <i class="fas fa-tint"></i> Marca de Agua
+                </button>
+                <button class="btn" onclick="mergePDFs()">
+                    <i class="fas fa-object-group"></i> Combinar PDFs
+                </button>
+                <button class="btn" onclick="splitPDF()">
+                    <i class="fas fa-cut"></i> Dividir PDF
+                </button>
+                <button class="btn secondary" onclick="addPassword()">
+                    <i class="fas fa-lock"></i> Proteger
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <i class="fas fa-edit"></i>
+                    <span id="editorTitle">Editor Markdown</span>
+                </div>
+                <div class="panel-content">
+                    <textarea id="editor"></textarea>
+                </div>
+            </div>
+
+            <div class="preview-panel">
+                <div class="panel-header">
+                    <i class="fas fa-eye"></i>
+                    Vista Previa
+                </div>
+                <div class="panel-content">
+                    <div class="loading" id="previewLoading">
+                        <div class="spinner"></div>
+                        Procesando vista previa...
+                    </div>
+                    <div class="preview-content" id="preview"></div>
+                </div>
+            </div>
+
+            <div class="pdf-panel">
+                <div class="panel-header">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF Generado
+                </div>
+                <div class="panel-content">
+                    <div class="loading" id="pdfLoading">
+                        <div class="spinner"></div>
+                        Generando PDF...
+                    </div>
+                    <iframe class="pdf-viewer" id="pdfViewer"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                <span id="documentStatus">Listo</span> | 
+                <span id="wordCount">0 palabras</span> | 
+                <span id="charCount">0 caracteres</span>
+            </div>
+            <div>
+                <span id="lastSaved">Sin guardar</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <a href="https://link.mercadopago.com.ar/papiweb" target="_blank">
+                Papiweb desarrollos informáticos <i class="fas fa-coffee coffee-icon"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Modal para agregar texto -->
+    <div id="textModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-plus-circle"></i> Agregar Texto al PDF</h3>
+            <div class="form-group">
+                <label>Texto:</label>
+                <input type="text" id="textInput" placeholder="Ingrese el texto a agregar">
+            </div>
+            <div class="form-group">
+                <label>Posición X:</label>
+                <input type="number" id="posX" value="50" min="0" max="600">
+            </div>
+            <div class="form-group">
+                <label>Posición Y:</label>
+                <input type="number" id="posY" value="50" min="0" max="800">
+            </div>
+            <div class="form-group">
+                <label>Tamaño de fuente:</label>
+                <input type="number" id="fontSize" value="12" min="8" max="72">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn" onclick="addTextToPDF()">Agregar</button>
+                <button class="btn secondary" onclick="closeModal('textModal')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para marca de agua -->
+    <div id="watermarkModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-tint"></i> Agregar Marca de Agua</h3>
+            <div class="form-group">
+                <label>Texto de marca de agua:</label>
+                <input type="text" id="watermarkText" placeholder="CONFIDENCIAL">
+            </div>
+            <div class="form-group">
+                <label>Opacidad (0.1 - 1.0):</label>
+                <input type="number" id="watermarkOpacity" value="0.3" min="0.1" max="1.0" step="0.1">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn" onclick="applyWatermark()">Aplicar</button>
+                <button class="btn secondary" onclick="closeModal('watermarkModal')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" style="display: none;" accept=".md,.tex,.txt">
+    <input type="file" id="imageInput" style="display: none;" accept="image/*">
+
+    <script>
+        let editor;
+        let currentFormat = 'markdown';
+        let currentPDFBytes = null;
+        let documentData = {
+            content: '',
+            title: 'Documento sin título',
+            lastModified: new Date()
+        };
+
+        // Inicializar el editor
+        document.addEventListener('DOMContentLoaded', function() {
+            editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+                mode: 'markdown',
+                theme: 'dracula',
+                lineNumbers: true,
+                lineWrapping: true,
+                autofocus: true,
+                indentUnit: 2,
+                tabSize: 2,
+                extraKeys: {
+                    "Ctrl-S": function() { saveDocument(); },
+                    "Ctrl-B": function() { insertBold(); },
+                    "Ctrl-I": function() { insertItalic(); }
+                }
+            });
+
+            editor.on('change', function() {
+                updatePreview();
+                updateStatus();
+                documentData.content = editor.getValue();
+                documentData.lastModified = new Date();
+            });
+
+            // Insertar contenido inicial
+            insertTemplate();
+            
+            // Configurar MathJax
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                },
+                startup: {
+                    pageReady: () => {
+                        return MathJax.startup.defaultPageReady().then(() => {
+                            console.log('MathJax inicializado');
+                        });
+                    }
+                }
+            };
+        });
+
+        function updatePreview() {
+            const content = editor.getValue();
+            const preview = document.getElementById('preview');
+            const loading = document.getElementById('previewLoading');
+            
+            loading.classList.add('active');
+            
+            setTimeout(() => {
+                if (currentFormat === 'markdown') {
+                    preview.innerHTML = marked.parse(content);
+                } else {
+                    // Para LaTeX, mostrar el código con sintaxis highlighting
+                    preview.innerHTML = `<pre><code>${escapeHtml(content)}</code></pre>`;
+                }
+                
+                // Procesar matemáticas con MathJax
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.typesetPromise([preview]).then(() => {
+                        loading.classList.remove('active');
+                    });
+                } else {
+                    loading.classList.remove('active');
+                }
+            }, 300);
+        }
+
+        function updateStatus() {
+            const content = editor.getValue();
+            const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+            const chars = content.length;
+            
+            document.getElementById('wordCount').textContent = words + ' palabras';
+            document.getElementById('charCount').textContent = chars + ' caracteres';
+            document.getElementById('documentStatus').textContent = 'Modificado';
+        }
+
+        function switchFormat() {
+            const formatSelect = document.getElementById('formatSelect');
+            currentFormat = formatSelect.value;
+            
+            const editorTitle = document.getElementById('editorTitle');
+            const pdfTools = document.getElementById('pdfTools');
+            
+            if (currentFormat === 'markdown') {
+                editor.setOption('mode', 'markdown');
+                editorTitle.textContent = 'Editor Markdown';
+                pdfTools.classList.remove('active');
+            } else {
+                editor.setOption('mode', 'stex');
+                editorTitle.textContent = 'Editor LaTeX';
+                pdfTools.classList.add('active');
+            }
+            
+            updatePreview();
+        }
+
+        document.getElementById('formatSelect').addEventListener('change', switchFormat);
+
+        function insertTemplate() {
+            let template = '';
+            
+            if (currentFormat === 'markdown') {
+                template = `# Mi Documento Profesional
+
+## Introducción
+
+Este es un documento creado con el **Editor Markdown/LaTeX a PDF Profesional**. 
+
+### Características principales:
+
+- Editor de código con sintaxis highlighting
+- Vista previa en tiempo real
+- Exportación a PDF de alta calidad
+- Soporte para fórmulas matemáticas: $E = mc^2$
+- Herramientas profesionales de edición de PDF
+
+## Fórmulas Matemáticas
+
+Ecuación en línea: $\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$
+
+Ecuación centrada:
+$$\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}$$
+
+## Código
+
+\`\`\`javascript
+function saludar(nombre) {
+    console.log(\`Hola, \${nombre}!\`);
+}
+\`\`\`
+
+## Citas
+
+> "La tecnología es mejor cuando acerca a las personas." - Matt Mullenweg
+
+---
+
+**Fecha:** ${new Date().toLocaleDateString('es-ES')}  
+**Autor:** Editor Profesional`;
+            } else {
+                template = `\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[spanish]{babel}
+\\usepackage{amsmath}
+\\usepackage{amsfonts}
+\\usepackage{amssymb}
+\\usepackage{graphicx}
+\\usepackage{geometry}
+\\geometry{margin=2.5cm}
+
+\\title{Mi Documento LaTeX Profesional}
+\\author{Editor Profesional}
+\\date{\\today}
+
+\\begin{document}
+
+\\maketitle
+
+\\section{Introducción}
+
+Este es un documento creado con el \\textbf{Editor Markdown/LaTeX a PDF Profesional}.
+
+\\subsection{Características principales}
+
+\\begin{itemize}
+    \\item Editor de código con sintaxis highlighting
+    \\item Vista previa en tiempo real
+    \\item Exportación a PDF de alta calidad
+    \\item Soporte completo para LaTeX
+    \\item Herramientas profesionales de edición
+\\end{itemize}
+
+\\section{Matemáticas}
+
+Ecuación en línea: $E = mc^2$
+
+Ecuación centrada:
+\\begin{equation}
+    \\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+\\end{equation}
+
+Otra ecuación importante:
+\\begin{align}
+    \\sum_{n=1}^{\\infty} \\frac{1}{n^2} &= \\frac{\\pi^2}{6} \\\\
+    \\zeta(2) &= \\frac{\\pi^2}{6}
+\\end{align}
+
+\\section{Conclusión}
+
+LaTeX es una herramienta poderosa para la creación de documentos científicos y técnicos.
+
+\\end{document}`;
+            }
+            
+            editor.setValue(template);
+            updatePreview();
+        }
+
+        async function exportPDF() {
+            const loading = document.getElementById('pdfLoading');
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            loading.classList.add('active');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const content = editor.getValue();
+                let processedContent = content;
+                
+                if (currentFormat === 'markdown') {
+                    // Convertir markdown a texto plano para PDF
+                    processedContent = content
+                        .replace(/#{1,6}\s*/g, '')
+                        .replace(/\*\*(.*?)\*\*/g, '$1')
+                        .replace(/\*(.*?)\*/g, '$1')
+                        .replace(/`(.*?)`/g, '$1')
+                        .replace(/\[(.*?)\]\(.*?\)/g, '$1');
+                }
+                
+                // Configurar fuente y márgenes
+                doc.setFont('helvetica');
+                doc.setFontSize(12);
+                
+                const pageWidth = doc.internal.pageSize.width;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 20;
+                const lineHeight = 7;
+                
+                // Dividir el contenido en líneas
+                const lines = doc.splitTextToSize(processedContent, pageWidth - 2 * margin);
+                
+                let yPosition = margin;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    if (yPosition + lineHeight > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = margin;
+                    }
+                    
+                    doc.text(lines[i], margin, yPosition);
+                    yPosition += lineHeight;
+                }
+                
+                // Agregar metadatos
+                doc.setProperties({
+                    title: documentData.title,
+                    subject: 'Documento generado con Editor Profesional',
+                    author: 'Editor Markdown/LaTeX',
+                    creator: 'Sistema de Edición Profesional'
+                });
+                
+                const pdfBytes = doc.output('arraybuffer');
+                currentPDFBytes = pdfBytes;
+                
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                pdfViewer.src = url;
+                
+                // Mostrar herramientas de PDF
+                document.getElementById('pdfTools').classList.add('active');
+                
+            } catch (error) {
+                console.error('Error al generar PDF:', error);
+                alert('Error al generar el PDF. Por favor, verifique el contenido.');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function showAddTextModal() {
+            document.getElementById('textModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        async function addTextToPDF() {
+            if (!currentPDFBytes) {
+                alert('Primero debe generar un PDF');
+                return;
+            }
+            
+            const text = document.getElementById('textInput').value;
+            const x = parseInt(document.getElementById('posX').value);
+            const y = parseInt(document.getElementById('posY').value);
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            
+            if (!text) {
+                alert('Ingrese el texto a agregar');
+                return;
+            }
+            
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.load(currentPDFBytes);
+                const pages = pdfDoc.getPages();
+                const firstPage = pages[0];
+                
+                firstPage.drawText(text, {
+                    x: x,
+                    y: firstPage.getHeight() - y,
+                    size: fontSize,
+                    color: PDFLib.rgb(0, 0, 0)
+                });
+                
+                const modifiedPdfBytes = await pdfDoc.save();
+                currentPDFBytes = modifiedPdfBytes;
+                
+                const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                document.getElementById('pdfViewer').src = url;
+                
+                closeModal('textModal');
+                document.getElementById('textInput').value = '';
+                
+            } catch (error) {
+                console.error('Error al agregar texto:', error);
+                alert('Error al modificar el PDF');
+            }
+        }
+
+        function addWatermark() {
+            document.getElementById('watermarkModal').style.display = 'block';
+        }
+
+        async function applyWatermark() {
+            if (!currentPDFBytes) {
+                alert('Primero debe generar un PDF');
+                return;
+            }
+            
+            const watermarkText = document.getElementById('watermarkText').value;
+            const opacity = parseFloat(document.getElementById('watermarkOpacity').value);
+            
+            if (!watermarkText) {
+                alert('Ingrese el texto de la marca de agua');
+                return;
+            }
+            
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.load(currentPDFBytes);
+                const pages = pdfDoc.getPages();
+                
+                pages.forEach(page => {
+                    const { width, height } = page.getSize();
+                    
+                    // Dibujar la marca de agua diagonalmente
+                    page.drawText(watermarkText, {
+                        x: width / 2 - 150,
+                        y: height / 2,
+                        size: 60,
+                        opacity: opacity,
+                        rotate: Math.PI / 4,
+                        color: PDFLib.rgb(0.5, 0.5, 0.5)
+                    });
+                });
+                
+                const modifiedPdfBytes = await pdfDoc.save();
+                currentPDFBytes = modifiedPdfBytes;
+                
+                const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                document.getElementById('pdfViewer').src = url;
+                
+                closeModal('watermarkModal');
+                document.getElementById('watermarkText').value = '';
+                
+            } catch (error) {
+                console.error('Error al agregar marca de agua:', error);
+                alert('Error al modificar el PDF');
+            }
+        }
+
+        function saveDocument() {
+            const content = editor.getValue();
+            const title = documentData.title;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = title + '.' + (currentFormat === 'markdown' ? 'md' : 'tex');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            documentData.lastModified = new Date();
+            updateStatus();
+        }
+
+        function loadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.click();
+            
+            fileInput.onchange = function() {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    editor.setValue(content);
+                    documentData.content = content;
+                    documentData.title = file.name;
+                    documentData.lastModified = new Date();
+                    
+                    updatePreview();
+                    updateStatus();
+                };
+                
+                reader.readAsText(file);
+            };
+        }
+
+        function clearEditor() {
+            editor.setValue('');
+            documentData.content = '';
+            documentData.title = 'Documento sin título';
+            documentData.lastModified = new Date();
+            
+            updatePreview();
+            updateStatus();
+        }
+
+        function insertBold() {
+            const selection = editor.getSelection();
+            editor.replaceSelection(`**${selection}**`);
+        }
+
+        function insertItalic() {
+            const selection = editor.getSelection();
+            editor.replaceSelection(`*${selection}*`);
+        }
+    </script>
+</body>
+</html>

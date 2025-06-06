@@ -1,0 +1,7 @@
+{
+  "homepage": "https://tu-usuario.github.io/latex-markdown-editor",
+  "scripts": {
+    "predeploy": "mkdir -p dist && cp -r public dist/ && cp *.html dist/ && cp *.json dist/",
+    "deploy": "gh-pages -d dist"
+  }
+}

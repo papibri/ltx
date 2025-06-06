@@ -1,0 +1,29 @@
+{
+  "name": "latex-markdown-editor",
+  "version": "1.0.0",
+  "description": "Editor profesional de Markdown/LaTeX a PDF",
+  "main": "rest-api-backend.js",
+  "homepage": "https://tu-usuario.github.io/latex-markdown-editor",
+  "scripts": {
+    "start": "node rest-api-backend.js",
+    "dev": "nodemon rest-api-backend.js",
+    "build": "mkdir -p dist && cp -r public dist/ && cp *.html dist/ && cp *.json dist/",
+    "test": "echo 'No test specified'",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "marked": "^4.3.0",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^19.8.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
+}
