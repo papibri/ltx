@@ -1,0 +1,21 @@
+{
+  "name": "latex-markdown-editor",
+  "description": "Editor profesional de Markdown/LaTeX a PDF",
+  "repository": "https://github.com/tu-usuario/latex-markdown-editor",
+  "keywords": ["node", "express", "markdown", "latex", "pdf", "editor"],
+  "env": {
+    "NODE_ENV": {
+      "description": "Ambiente de ejecución",
+      "value": "production"
+    },
+    "PORT": {
+      "description": "Puerto del servidor",
+      "value": "3000"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
