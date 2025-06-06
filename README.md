@@ -31,6 +31,10 @@ Una aplicación web moderna y elegante que permite editar documentos Markdown y 
 - PDF-lib.js para manipulación de PDFs
 - Express.js para el backend
 - Font Awesome para iconos
+- UUID para generación de IDs únicos
+- Puppeteer para renderizado PDF
+- TinyMCE para edición enriquecida
+- Multer para carga de archivos
 
 ## Cómo Usar
 

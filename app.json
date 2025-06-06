@@ -11,6 +11,14 @@
     "PORT": {
       "description": "Puerto del servidor",
       "value": "3000"
+    },
+    "BASE_URL": {
+      "description": "URL base de la aplicación",
+      "required": false
+    },
+    "UPLOAD_LIMIT": {
+      "description": "Límite de tamaño para archivos (en MB)",
+      "value": "10"
     }
   },
   "buildpacks": [
